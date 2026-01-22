@@ -1,59 +1,225 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Mini SaaS / POS Backend System (API-First)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Project Overview
 
-## About Laravel
+This project is a **Multi-Tenant POS / Inventory Management Backend System** built with **Laravel 12** following an **API-first, secure, and scalable architecture**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Each business operates as an independent **tenant**, and **strict data isolation** is enforced across all layers of the system.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+* **Laravel 12**
+* **Laravel Sanctum** (API Authentication)
+* **MySQL** (Relational Database)
+* **Eloquent ORM**
+* **Postman** (API testing & demo)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Core Features
 
-## Laravel Sponsors
+* Multi-Tenancy using `X-Tenant-ID` header
+* Token-based Authentication (Sanctum)
+* Role-Based Access Control (Owner, Staff)
+* Inventory & Order Management with transactional stock handling
+* Optimized reporting-ready data structure
+* Secure, production-grade API design
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## Architecture Overview
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Multi-Tenancy Strategy
 
-## Contributing
+* Every business entity contains a `tenant_id`
+* Tenant context is resolved globally using a middleware
+* A shared `BaseTenantModel` applies global scopes to enforce tenant isolation
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**Tenant Resolution Flow:**
 
-## Code of Conduct
+```
+Request → X-Tenant-ID Header → ResolveTenant Middleware → Global Tenant Context
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## Authentication & Authorization
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Authentication
 
-## License
+* Implemented using **Laravel Sanctum**
+* Only **Owner** and **Staff** users can authenticate
+* Customers are treated as business entities (no login)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Authorization (RBAC)
+
+* Roles: `owner`, `staff`
+* Authorization logic implemented using **Laravel Policies**
+* Policies are tenant-aware and role-aware
+* No authorization logic exists inside controllers
+
+---
+
+## Inventory & Order Management
+
+### Product
+
+* SKU is unique per tenant
+* Stock and low-stock threshold tracking
+
+### Order
+
+* Orders support multiple products
+* Stock is deducted using `DB::transaction()`
+* Row-level locking prevents race conditions
+* Negative inventory is strictly prevented
+
+### Order Cancellation
+
+* Only owners can cancel orders
+* Cancelling an order restores inventory stock
+* All operations are transactional
+
+---
+
+## Security Considerations
+
+* Form Request Validation for all inputs
+* Mass assignment protection using `$fillable`
+* Strict policy-based authorization
+* API rate limiting
+* Secure error handling without sensitive data exposure
+
+---
+
+## Performance Considerations
+
+* Eager loading to avoid N+1 queries
+* Indexed columns:
+
+  * `tenant_id`
+  * `created_at`
+  * `product_id`
+* Database transactions for critical operations
+
+---
+
+## API Design Standards
+
+* RESTful API conventions
+* Consistent JSON response structure
+* Laravel API Resources (`JsonResource`)
+* Pagination on listing endpoints
+
+---
+
+## Database Seeding
+
+Seeders are provided for:
+
+* Tenant
+* Owner & Staff Users
+* Customers
+* Products
+
+Seeding ensures:
+
+* Correct `tenant_id` assignment
+* Valid foreign key relationships
+* Ready-to-demo environment
+
+Run:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+---
+
+## Postman API Collection
+
+### What Is Provided
+
+This project includes **ready-to-import Postman collections** covering:
+
+* Authentication (Login, Logout)
+* Product CRUD
+* Customer CRUD
+* Order Creation & Cancellation
+
+
+#### Upload json API collection file to the postman
+
+* Add Postman collection JSON files to the GitHub repository:
+
+```
+/postman
+ ├── Mini SaaS POS API.postman_collection.json
+```
+
+#### Public Postman API Collection view link
+
+[Postman API Collection](https://documenter.getpostman.com/view/14128827/2sBXVkBUd1)
+
+---
+
+## API Usage Requirements
+
+All API requests must include:
+
+```
+X-Tenant-ID: <tenant_id>
+Authorization: Bearer <token>
+```
+
+---
+
+## Setup Instructions
+
+```bash
+composer install
+cp .env.example .env
+
+.env file modify these lines
+DB_CONNECTION=mysql
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=pos_api
+
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+---
+
+## Demo Flow
+
+1. Login as Owner
+2. Create Product & Customer
+3. Create Order (stock deduction)
+4. Cancel Order (stock restore)
+
+---
+
+## Evaluation Alignment
+
+This project fully satisfies:
+
+* Multi-tenant data isolation
+* Secure authentication & RBAC
+* Transaction-safe inventory handling
+* Clean architecture & documentation
+
+---
+
+## Project GitHub Link
+
+[Project GitHub Link](https://github.com/basudev-g/multitenat-pos-api-app)
+
+## Author
+
+**Basudev Goswami**
+Laravel Developer

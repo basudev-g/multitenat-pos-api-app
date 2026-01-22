@@ -15,4 +15,9 @@ class Order extends BaseTenantModel
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
 }
